@@ -2,7 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { middleware } from "./middleware";
 import { JWT_SECRET } from "@repo/backend-common/config";
-import { CreateUserSchema } from "@repo/common/types"
+import { CreateUserSchema, SigninSchema, RoomSchema } from "@repo/common/types"
 
 const app = express();
 app.use(express.json());
@@ -28,9 +28,14 @@ app.post("/signup", (req, res) => {
 
 app.post("/signin", (req, res) => {
     const body = req.body;
-
-    const username = body.username;
-    const password = body.password;
+    const data = SigninSchema.safeParse(body);
+    if(!data.success){
+        res.status(403).json({
+            message: "Invalid Data types"
+        })
+        return;
+    }
+    const username = data.data.username;
 
     // Check for user and if(!user) return;
     if(!JWT_SECRET){
@@ -43,9 +48,14 @@ app.post("/signin", (req, res) => {
 })
 
 app.post("/create-room", middleware, (req, res) =>{
-    // Add a middleware to get username from token
-    // const username = from token
-    const { roomId } = req.body;
+    const data = RoomSchema.safeParse(req.userId);
+    if(!data.success){
+        res.status(403).json({
+            message : "Invalid Data"
+        })
+        return;
+    }
+    const roomId  = data.data.name;
     res.json({roomId : roomId});
 })
 
