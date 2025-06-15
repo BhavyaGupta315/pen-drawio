@@ -3,26 +3,53 @@ import jwt from "jsonwebtoken";
 import { middleware } from "./middleware";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { CreateUserSchema, SigninSchema, RoomSchema } from "@repo/common/types"
+import {prismaClient} from "@repo/db/client"
 
 const app = express();
 app.use(express.json());
 
-app.post("/signup", (req, res) => {
+app.post("/signup", async (req, res) => {
     const body = req.body;
-    const data = CreateUserSchema.safeParse(body);
+    const parsedData = CreateUserSchema.safeParse(body);
 
-    if(!data.success){
+    if(!parsedData.success){
         res.status(403).json({
             message: "Incorrect Data input"
         })
         return;
     }
-    const username = data.data?.username;
+    const {username, password, name} = parsedData.data;
     // Check for already user and if(user) return;
+    try {
+        const userExists = await prismaClient.user.findUnique({
+            where : {
+                username : username
+            }
+        })
+        if(userExists != null){
+            res.status(403).json({
+                message : "User already Exists"
+            })
+            return;
+        }
 
-    // Enter in the database
-    const token = jwt.sign({username: username}, JWT_SECRET);
-    res.json({token});
+        const user = await prismaClient.user.create({
+            data : {
+                email : username,
+                password,
+                name
+            }
+        })
+        // Enter in the database
+        const token = jwt.sign({username: username}, JWT_SECRET);
+        res.json({token});
+    }catch(e){
+        console.log(e);
+        res.status(411).json({
+            message: "Internal Server Error from the database."
+        })
+    }
+    
 
 })
 
