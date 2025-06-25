@@ -18,12 +18,12 @@ app.post("/signup", async (req, res) => {
         })
         return;
     }
-    const {username, password, name} = parsedData.data;
+    const {email, password, name} = parsedData.data;
     // Check for already user and if(user) return;
     try {
         const userExists = await prismaClient.user.findUnique({
             where : {
-                username : username
+                email : email
             }
         })
         if(userExists != null){
@@ -35,13 +35,13 @@ app.post("/signup", async (req, res) => {
 
         const user = await prismaClient.user.create({
             data : {
-                email : username,
+                email,
                 password,
                 name
             }
         })
         // Enter in the database
-        const token = jwt.sign({username: username}, JWT_SECRET);
+        const token = jwt.sign({userId: user.id}, JWT_SECRET);
         res.json({token});
     }catch(e){
         console.log(e);
@@ -62,14 +62,14 @@ app.post("/signin", (req, res) => {
         })
         return;
     }
-    const username = data.data.username;
+    const email = data.data.email;
 
     // Check for user and if(!user) return;
     if(!JWT_SECRET){
         res.send("There is no secret key");
         return;
     } 
-    const token = jwt.sign({username: username}, JWT_SECRET);
+    const token = jwt.sign({email: email}, JWT_SECRET);
     res.send(token);
 
 })
