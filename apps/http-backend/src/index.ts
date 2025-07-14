@@ -127,16 +127,48 @@ app.post("/create-room", middleware, async (req, res) =>{
 
 app.get("/chat/:roomId", async (req, res) =>{
     const roomId = Number(req.params.roomId);
-    const messages = await prismaClient.chat.findMany({
+    try{
+        const messages = await prismaClient.chat.findMany({
+            where:{
+                roomId : roomId
+            },
+            orderBy:{
+                id : "desc"
+            },
+            take : 50   
+        })
+        res.json({messages})
+    }catch(e){
+        console.log(e);
+        res.status(401).json({
+            message : "Internal Server Error"
+        })
+
+    }
+    
+});
+
+
+app.get("/room/:slug", async (req, res) => {
+    const slug = req.params.slug;
+    try{
+        const room = await prismaClient.room.findFirst({
         where:{
-            roomId : roomId
-        },
-        orderBy:{
-            id : "desc"
-        },
-        take : 50   
-    })
-    res.json({messages})
+            slug
+        }
+    });
+
+        res.json({
+            room
+        })
+    }catch(e){
+        console.log(e);
+        res.json({
+            message : "Internal Server Error"
+        })
+
+    }
+    
 })
 
 app.listen(3001);

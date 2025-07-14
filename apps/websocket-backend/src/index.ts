@@ -88,7 +88,7 @@ wss.on("connection", (ws, request) => {
             const message = parsedData.message;
             console.log(`Chat option has message - ${message} to be send on roomId - ${roomId}`)
             
-            await prismaClient.chat.create({
+            const dbMsg = await prismaClient.chat.create({
                 data : {
                     roomId,
                     message,
@@ -101,7 +101,8 @@ wss.on("connection", (ws, request) => {
                     user.ws.send(JSON.stringify({
                         type:"chat",
                         message:message,
-                        roomId
+                        roomId,
+                        id : dbMsg.id
                     }))
                 }
             })
