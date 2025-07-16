@@ -10,32 +10,43 @@ const app = express();
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-    const body = req.body;
-    const parsedData = CreateUserSchema.safeParse(body);
+    try{
+        const body = req.body;
 
-    if(!parsedData.success){
-        res.status(403).json({
-            message: "Incorrect Data input"
-        })
-        return;
-    }
-    const {email, password, name} = parsedData.data;
-    if(!JWT_SECRET){
-        console.log("JWT Secret is not present");
-    }
-    const userExists = await prismaClient.user.findUnique({
-        where : {
-            email : email
+        const parsedData = CreateUserSchema.safeParse(body);
+        if(!parsedData.success){
+            res.status(400).json({
+                type: "validation_error",
+                message: "Invalid input data",
+                errors: parsedData.error.format(),
+            })
+            return;
         }
-    })
-    if(userExists != null){
-        res.status(403).json({
-            message : "User already Exists"
+        
+        if(!JWT_SECRET){
+            console.error("JWT Secret is not present");
+            res.status(500).json({
+                type: "server_error",
+                message: "Internal server configuration error",
+            });
+            return;
+        }
+
+        const {email, password, name} = parsedData.data;
+        const userExists = await prismaClient.user.findUnique({
+            where : {
+                email : email
+            }
         })
-        return;
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    try {
+        if(userExists){
+            res.status(409).json({
+                type: "conflict_error",
+                message: "User already exists with this email",
+            })
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prismaClient.user.create({
             data : {
                 email,
@@ -45,52 +56,65 @@ app.post("/signup", async (req, res) => {
         })
         
         const token = jwt.sign({userId: user.id}, JWT_SECRET);
-        res.json({token});
+        res.status(201).json({token});
     }catch(e){
-        console.log("Error while signing up - ",e);
-        res.status(411).json({
-            message: "Username not available."
-        })
+        console.error("Error during signup:", e);
+        res.status(500).json({
+            type: "server_error",
+            message: "Unexpected error during signup. Please try again later.",
+        });
     }
     
 
 })
 
 app.post("/signin", async (req, res) => {
-    const body = req.body;
-    const data = SigninSchema.safeParse(body);
-    if(!data.success){
-        res.status(403).json({
-            message: "Invalid Data types"
-        })
-        return;
-    }
-    const email = data.data.email;
-    const password = data.data.password;
+    try{
+        const body = req.body;
 
-    const userExists = await prismaClient.user.findUnique({
-        where : {
-            email : email,
+        const parsedData = SigninSchema.safeParse(body);
+        if(!parsedData.success){
+            res.status(400).json({
+                type: "validation_error",
+                message: "Invalid input data",
+                errors: parsedData.error.format(),
+            })
+            return;
         }
-    })
-    if(!userExists){
-        res.status(401).json({
-            message : "Invalid Emails"
-        });
-        return;
-    }
-    const isMatch = await bcrypt.compare(password, userExists.password);
-    if (!isMatch){
-        res.status(401).json({ error: "Invalid credentials" });
-        return;
-    }
-    if(!JWT_SECRET){
-        res.send("There is no secret key");
-        return;
-    } 
-    const token = jwt.sign({userId: userExists.id}, JWT_SECRET);
-    res.json({token});
 
+        if(!JWT_SECRET){
+            console.error("JWT Secret is not present");
+            res.status(500).json({
+                type: "server_error",
+                message: "Internal server configuration error",
+            });
+            return;
+        }
+
+        const {email, password} = parsedData.data;
+        const userExists = await prismaClient.user.findUnique({
+            where : {
+                email : email,
+            }
+        });
+
+        if (!userExists || !(await bcrypt.compare(password, userExists.password))) {
+            res.status(401).json({
+                type: "unauthorized",
+                message: "Invalid email or password",
+            });
+            return;
+        };
+
+        const token = jwt.sign({userId: userExists.id}, JWT_SECRET);
+        res.status(201).json({token});
+    }catch(e){
+        console.error("Error during signin:", e);
+        res.status(500).json({
+            type: "server_error",
+            message: "Unexpected error during Signin. Please try again later.",
+        });
+    }
 })
 
 app.post("/create-room", middleware, async (req, res) =>{
