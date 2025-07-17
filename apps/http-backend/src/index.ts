@@ -5,9 +5,16 @@ import { JWT_SECRET } from "@repo/backend-common/config";
 import bcrypt from "bcryptjs";
 import { CreateUserSchema, SigninSchema, RoomSchema } from "@repo/common/types"
 import {prismaClient} from "@repo/db/client"
+import { parse, serialize } from "cookie";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
+
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN,
+  credentials: true,              
+}));
 
 app.post("/signup", async (req, res) => {
     try{
@@ -55,8 +62,18 @@ app.post("/signup", async (req, res) => {
             }
         })
         
-        const token = jwt.sign({userId: user.id}, JWT_SECRET);
-        res.status(201).json({token});
+        const token = jwt.sign({userId: user.id}, JWT_SECRET, {
+            expiresIn: "7d"
+        });
+        res.setHeader("Set-Cookie", serialize("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+            maxAge: 7*24*60*60
+        }))
+
+        res.status(201).json({ success : true });
     }catch(e){
         console.error("Error during signup:", e);
         res.status(500).json({
@@ -115,6 +132,48 @@ app.post("/signin", async (req, res) => {
             message: "Unexpected error during Signin. Please try again later.",
         });
     }
+})
+
+app.post("/signout", async (req, res) => {
+    res.setHeader("Set-Cookie", serialize("token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 0,
+    }));
+    res.status(200).json({ success: true });
+});
+
+
+app.get("/token", (req, res) => {
+    const cookies = parse(req.headers.cookie || "");
+    const token = cookies.token;
+
+    if(!token){
+        res.status(403).json({ type: "unauthorized", message : "Cookies not Present" });
+        return;
+    }
+
+    if(!JWT_SECRET){
+        console.error("JWT Secret is not present");
+        res.status(500).json({
+            type: "server_error",
+            message: "Internal server configuration error",
+        });
+        return;
+    }
+    try {
+        jwt.verify(token, JWT_SECRET);
+        res.json({
+            type:"success",
+            token:token
+        })
+    }catch(err){
+        res.status(403).json({ type: "unauthorized", message : "Cookies are Invalid" });
+    return;
+    }
+
 })
 
 app.post("/create-room", middleware, async (req, res) =>{
