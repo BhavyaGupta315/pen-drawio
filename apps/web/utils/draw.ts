@@ -17,15 +17,14 @@ export default async function initDraw(canvas : HTMLCanvasElement, roomId : stri
     const ctx = canvas.getContext("2d");
     const existingShape : Shape[] = await getExistingShape(roomId);
     if(!ctx) return;
-    
     clearCanvas(canvas, existingShape);
 
     socket.onmessage = (event) =>{
         const message = JSON.parse(event.data);
-
         if(message.type === "chat"){
-            const parsedShape = message.message;
-            existingShape.push(parsedShape);
+            const parsedMessage = JSON.parse(message.message);
+            const shape = parsedMessage.shape;
+            existingShape.push(shape);
             clearCanvas(canvas, existingShape);
         }
     }
@@ -57,7 +56,8 @@ export default async function initDraw(canvas : HTMLCanvasElement, roomId : stri
             type : "chat",
             message :  JSON.stringify({
                 shape
-            })
+            }),
+            roomId : roomId
         }))
     });
 
@@ -80,18 +80,17 @@ function clearCanvas(canvas : HTMLCanvasElement, existingShape : Shape[]){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(0,0,0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    existingShape.map((shape) => {
+    ctx.strokeStyle = "rgba(255, 255, 255)"
+    existingShape.forEach((shape) => {
         if(shape.type === "rect"){
-            ctx.strokeStyle = "rgba(255, 255, 255)"
             ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
         }
     })
 }
 
 async function getExistingShape(roomId : string){
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chats/${roomId}`);
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`);
     const messages = response.data.messages; 
-
     const shapes = messages.map((x : {message : string}) => {
         const messageData = JSON.parse(x.message);
         return messageData;

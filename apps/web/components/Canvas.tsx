@@ -8,9 +8,10 @@ export default function Canvas({roomId} : {roomId : string}){
     const {socket, loading, error} = useSocket(roomId);
     useEffect(()=>{
         if(canvasRef.current && socket){
+            console.log("Cnvas Is here init")
             initDraw(canvasRef.current, roomId, socket);
         }
-    },[canvasRef])
+    },[canvasRef, socket])
     
     if(loading){
         return <div>

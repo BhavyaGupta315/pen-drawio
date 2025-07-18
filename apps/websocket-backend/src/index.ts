@@ -41,11 +41,13 @@ wss.on("connection", (ws, request) => {
     const token = queryParams.get('token');
 
     if(!token){
+        console.log("No Token Found");
         ws.send("No Token");
         return;
     }
 
     if(!JWT_SECRET){
+        console.log("Backend Error, No JWT_SECRET in env file")
         ws.send("Backend Error, No JWT_SECRET in env file");
         return;
     }
@@ -86,18 +88,19 @@ wss.on("connection", (ws, request) => {
         if(parsedData.type === "chat"){
             const roomId = parsedData.roomId;
             const message = parsedData.message;
-            console.log(`Chat option has message - ${message} to be send on roomId - ${roomId}`)
+            const parsedMessage = JSON.parse(message);
+            const shape = parsedMessage.shape;
             
             const dbMsg = await prismaClient.chat.create({
                 data : {
-                    roomId,
-                    message,
+                    roomId : Number(roomId),
+                    message : JSON.stringify(shape),
                     userId
                 }
             })
             users.forEach(user => {
+                if(user.userId === userId) return;
                 if(user.rooms.includes(roomId)){
-                    console.log(`"User wil user id ${user.userId} is here"`)
                     user.ws.send(JSON.stringify({
                         type:"chat",
                         message:message,

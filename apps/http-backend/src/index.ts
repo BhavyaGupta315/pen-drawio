@@ -73,7 +73,7 @@ app.post("/signup", async (req, res) => {
             maxAge: 7*24*60*60
         }))
 
-        res.status(201).json({ success : true });
+        res.status(201).json({ type : "success", token : token });
     }catch(e){
         console.error("Error during signup:", e);
         res.status(500).json({
@@ -124,7 +124,10 @@ app.post("/signin", async (req, res) => {
         };
 
         const token = jwt.sign({userId: userExists.id}, JWT_SECRET);
-        res.status(201).json({token});
+        res.status(201).json({
+            type : "success",
+            token : token
+        });
     }catch(e){
         console.error("Error during signin:", e);
         res.status(500).json({
@@ -142,7 +145,7 @@ app.post("/signout", async (req, res) => {
         path: "/",
         maxAge: 0,
     }));
-    res.status(200).json({ success: true });
+    res.status(200).json({ type: "success" });
 });
 
 
@@ -198,7 +201,10 @@ app.post("/create-room", middleware, async (req, res) =>{
             }
         })
         const roomId  = room.id;
-        res.json({roomId : roomId});
+        res.json({
+            type : "success",
+            roomId : roomId
+        });
     }catch(e){
         console.log("Error while creating Room - ", e);
         res.status(401).json({
@@ -220,10 +226,11 @@ app.get("/chat/:roomId", async (req, res) =>{
             },
             take : 50   
         })
-        res.json({messages})
+        res.json({type : "success", messages})
     }catch(e){
         console.log(e);
         res.status(401).json({
+            type: "server_error",
             message : "Internal Server Error"
         })
 
@@ -242,11 +249,13 @@ app.get("/room/:slug", async (req, res) => {
     });
 
         res.json({
+            type : "success",
             room
         })
     }catch(e){
         console.log(e);
         res.json({
+            type: "server_error",
             message : "Internal Server Error"
         })
 
