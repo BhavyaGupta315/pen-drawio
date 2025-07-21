@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "../hooks/useSocket";
 import { Draw } from "../utils/Draw";
+import Topbar from "./Topbar";
 
-export type Tool = "circle" | "rect" | "pencil" | "arrow" | "text";
+export type Tool = "ellipse" | "rect" | "pencil" | "line" | "text" ;
 
 export default function Canvas({roomId} : {roomId : string}){
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,5 +44,6 @@ export default function Canvas({roomId} : {roomId : string}){
     }
     return <div className="h-[100vh] overflow-hidden">
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight}/>
+        <Topbar selectedTool={selectedTool} setSelectedTool={setSelectedTool}/>
     </div>
 }
