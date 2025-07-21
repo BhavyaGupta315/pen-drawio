@@ -224,7 +224,7 @@ app.get("/chat/:roomId", async (req, res) =>{
             orderBy:{
                 id : "desc"
             },
-            take : 50   
+            take : 1000
         })
         res.json({type : "success", messages})
     }catch(e){
@@ -261,6 +261,34 @@ app.get("/room/:slug", async (req, res) => {
 
     }
     
+});
+
+app.get("/room-exists/:id", async( req, res) => {
+    const id = req.params.id;
+    try{
+        const room = await prismaClient.room.findUnique({
+            where : {
+                id : Number(id)
+            }
+        });
+        if(!room){
+            res.json({
+                type:"unauthorized",
+                message : "Room Doesn't Exists"
+            })
+            return;
+        }
+        res.json({
+            type:"success",
+            message:"Room Exists"
+        })
+    }catch(e){
+        console.log(e);
+        res.json({
+            type: "server_error",
+            message : "Internal Server Error"
+        })
+    }
 })
 
 app.listen(3001);

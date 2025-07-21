@@ -30,7 +30,7 @@ export function useSocket(roomId : string): UseSocketResult {
                         console.log("WebSocket connected");
                         ws.send(JSON.stringify({
                             type : "join_room",
-                            roomId
+                            roomId : Number(roomId)
                         }))
                         setLoading(false);
                     }

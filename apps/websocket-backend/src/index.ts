@@ -7,7 +7,7 @@ const wss = new WebSocketServer({port: 8080});
 
 interface User {
     userId : string,
-    rooms : string[],
+    rooms : Number[],
     ws : WebSocket
 }
 
@@ -66,6 +66,7 @@ wss.on("connection", (ws, request) => {
     ws.on('message', async (data) => {
         const stringData = data.toString();
         const parsedData = JSON.parse(stringData);
+        
         if(parsedData.type === "join_room"){
             const user = users.find(x => x.ws === ws);
             if(!user){
@@ -90,17 +91,18 @@ wss.on("connection", (ws, request) => {
             const message = parsedData.message;
             const parsedMessage = JSON.parse(message);
             const shape = parsedMessage.shape;
-            
             const dbMsg = await prismaClient.chat.create({
                 data : {
-                    roomId : Number(roomId),
+                    roomId : roomId,
                     message : JSON.stringify(shape),
                     userId
                 }
             })
+            
             users.forEach(user => {
-                if(user.userId === userId) return;
                 if(user.rooms.includes(roomId)){
+                    if(user.userId === userId) return;
+                    // console.log("Sending message to ", user.userId, "with WS ", user.ws);
                     user.ws.send(JSON.stringify({
                         type:"chat",
                         message:message,

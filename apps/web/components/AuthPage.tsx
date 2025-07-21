@@ -40,6 +40,7 @@ export default function AuthPage({isSignin} : {isSignin : boolean}){
             }
         }catch(e){
             console.error(error);
+            console.log(error);
             setError("Network error");
         }
     }

@@ -1,18 +1,31 @@
 "use client"
-import { useEffect, useRef } from "react";
-import initDraw from "../utils/draw";
+import { useEffect, useRef, useState } from "react";
 import { useSocket } from "../hooks/useSocket";
+import { Draw } from "../utils/Draw";
+
+export type Tool = "circle" | "rect" | "pencil" | "arrow" | "text";
 
 export default function Canvas({roomId} : {roomId : string}){
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [selectedTool, setSelectedTool] = useState<Tool>("rect");
+    const [drawBoard, setDrawBoard] = useState<Draw>()
     const {socket, loading, error} = useSocket(roomId);
+
     useEffect(()=>{
         if(canvasRef.current && socket){
-            console.log("Cnvas Is here init")
-            initDraw(canvasRef.current, roomId, socket);
+            const draw = new Draw(canvasRef.current, Number(roomId), socket);
+            setDrawBoard(draw);
+
+            return () =>{
+                draw.destroy();
+            }
         }
-    },[canvasRef, socket])
-    
+    },[canvasRef, socket]);
+
+    useEffect(() => {
+        drawBoard?.setTool(selectedTool);
+    },[selectedTool, drawBoard])
+     
     if(loading){
         return <div>
             Connecting to Server.....
@@ -28,7 +41,7 @@ export default function Canvas({roomId} : {roomId : string}){
             </div>
         </div>
     }
-    return <div className="relative overflow-hidden">
-        <canvas ref={canvasRef} width="1920" height="785"/>
+    return <div className="h-[100vh] overflow-hidden">
+        <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight}/>
     </div>
 }
