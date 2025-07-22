@@ -4,7 +4,7 @@ import { useSocket } from "../hooks/useSocket";
 import { Draw } from "../utils/Draw";
 import Topbar from "./Topbar";
 
-export type Tool = "ellipse" | "rect" | "pencil" | "line" | "text" ;
+export type Tool = "ellipse" | "rect" | "pencil" | "line" | "eraser" | "move" ;
 
 export default function Canvas({roomId} : {roomId : string}){
     const canvasRef = useRef<HTMLCanvasElement>(null);

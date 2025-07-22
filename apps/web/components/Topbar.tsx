@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./Canvas";
 import { IconButton } from "./IconButton";
-import { Circle, Pencil, RectangleHorizontalIcon, Slash } from "lucide-react";
+import { Circle, Eraser, Move, Pencil, RectangleHorizontalIcon, Slash } from "lucide-react";
 
 export default function Topbar({selectedTool, setSelectedTool} : {
     selectedTool : Tool;
@@ -30,6 +30,14 @@ export default function Topbar({selectedTool, setSelectedTool} : {
                 onClick={() => setSelectedTool("line")}
                 activated={selectedTool === "line"} 
                 icon={<Slash />}/>
+            <IconButton 
+                onClick={() => setSelectedTool("eraser")}
+                activated={selectedTool === "eraser"} 
+                icon={<Eraser />}/>
+            <IconButton 
+                onClick={() => setSelectedTool("move")}
+                activated={selectedTool === "move"} 
+                icon={<Move />}/>
         </div>
     </div>
 

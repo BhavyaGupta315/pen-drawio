@@ -87,30 +87,66 @@ wss.on("connection", (ws, request) => {
         }
 
         if(parsedData.type === "chat"){
-            const roomId = parsedData.roomId;
-            const message = parsedData.message;
-            const parsedMessage = JSON.parse(message);
-            const shape = parsedMessage.shape;
-            const dbMsg = await prismaClient.chat.create({
-                data : {
-                    roomId : roomId,
-                    message : JSON.stringify(shape),
-                    userId
+            try{
+                const roomId = parsedData.roomId;
+                const message = parsedData.message;
+
+                const userExists = await prismaClient.user.findUnique({
+                    where : {
+                        id : userId
+                    }
+                });
+
+                if(!userExists){
+                    ws.send(JSON.stringify({
+                        type : "error",
+                        message : "User Not Found"
+                    }));
+                    return;
                 }
-            })
-            
-            users.forEach(user => {
-                if(user.rooms.includes(roomId)){
-                    if(user.userId === userId) return;
-                    // console.log("Sending message to ", user.userId, "with WS ", user.ws);
-                    user.ws.send(JSON.stringify({
-                        type:"chat",
-                        message:message,
-                        roomId,
-                        id : dbMsg.id
-                    }))
+
+                const roomExists = await prismaClient.room.findUnique({
+                    where : {
+                        id : roomId
+                    }
+                });
+
+                if(!roomExists){
+                    ws.send(JSON.stringify({
+                        type:'error',
+                        message:'Room Not Found'
+                    }));
+                    return;
                 }
-            })
+                const parsedMessage = JSON.parse(message);
+                const shape = parsedMessage.shape;
+
+                const dbMsg = await prismaClient.chat.create({
+                    data : {
+                        roomId : roomId,
+                        message : JSON.stringify(shape),
+                        userId
+                    }
+                })
+                
+                users.forEach(user => {
+                    if(user.rooms.includes(roomId)){
+                        if(user.userId === userId) return;
+                        user.ws.send(JSON.stringify({
+                            type:"chat",
+                            message:message,
+                            roomId,
+                            id : dbMsg.id
+                        }))
+                    }
+                })
+            }catch(e){
+                console.error('Error processing chat message:', e);
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Failed to process message'
+                }));
+            }
         }
     })
     
