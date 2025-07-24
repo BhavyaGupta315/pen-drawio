@@ -1,6 +1,5 @@
 import axios from "axios";
 import { Tool } from "../components/Canvas";
-import { X } from "lucide-react";
 
 type Shape = {
     type : "rect",
@@ -23,12 +22,6 @@ type Shape = {
     startY: number;
     endX: number;
     endY: number;
-} | {
-    type : "eraser";
-    x : number;
-    y : number;
-    width: number;
-    height : number;
 } | {
     type : "move";
     shape : Shape;
@@ -117,6 +110,54 @@ export class Draw {
             }
         }
     }
+    
+    mouseMoveHandler = (e : MouseEvent) =>{
+        if(!this.clicked) return;
+        const width = e.clientX - this.startX;
+        const height = e.clientY - this.startY; 
+        
+        this.ctx.strokeStyle = "rgba(255, 255, 255)"
+
+        const selectedTool = this.selectedTool;
+        if(selectedTool === "rect"){
+            this.reDrawCanvas(); 
+            this.ctx.strokeRect(this.startX, this.startY, width, height);
+        }else if(selectedTool === "ellipse"){
+            const radiusX = Math.abs(width)/2;
+            const radiusY = Math.abs(height)/2;
+            const centerX = (this.startX + e.clientX)/2;
+            const centerY = (this.startY + e.clientY)/2;
+            
+            this.reDrawCanvas(); 
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2*Math.PI);
+            this.ctx.stroke();
+            this.ctx.closePath();
+        }else if(selectedTool === "line"){
+            this.reDrawCanvas(); 
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.startX, this.startY);
+            this.ctx.lineTo(e.clientX, e.clientY);
+            this.ctx.stroke();
+            this.ctx.closePath();
+        }else if(selectedTool === "pencil"){
+            this.currentPencilStroke.push({x : e.clientX, y : e.clientY});
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.currentPencilStroke[0]!.x, this.currentPencilStroke[0]!.y);
+            this.currentPencilStroke.forEach((point) => {
+                this.ctx.lineTo(point.x, point.y);
+            })
+            this.ctx.stroke();
+            this.ctx.closePath();
+        }else if(selectedTool === "eraser"){
+            this.eraseShape(e.clientX, e.clientY);
+        }else if(selectedTool === "move" && this.activeShape){
+            const moveShape = this.activeShape as Shape & {type : "move"};
+            moveShape.offsetX = e.clientX - this.startX;
+            moveShape.offsetY = e.clientY - this.startY;
+            this.reDrawCanvas();
+        }
+    }
 
     mouseUpHandler = (e : MouseEvent)=>{
         if(!this.clicked) return;
@@ -188,54 +229,6 @@ export class Draw {
         }));
 
         this.reDrawCanvas();
-    }
-
-    mouseMoveHandler = (e : MouseEvent) =>{
-        if(!this.clicked) return;
-        const width = e.clientX - this.startX;
-        const height = e.clientY - this.startY; 
-        
-        this.ctx.strokeStyle = "rgba(255, 255, 255)"
-
-        const selectedTool = this.selectedTool;
-        if(selectedTool === "rect"){
-            this.reDrawCanvas(); 
-            this.ctx.strokeRect(this.startX, this.startY, width, height);
-        }else if(selectedTool === "ellipse"){
-            const radiusX = Math.abs(width)/2;
-            const radiusY = Math.abs(height)/2;
-            const centerX = (this.startX + e.clientX)/2;
-            const centerY = (this.startY + e.clientY)/2;
-            
-            this.reDrawCanvas(); 
-            this.ctx.beginPath();
-            this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2*Math.PI);
-            this.ctx.stroke();
-            this.ctx.closePath();
-        }else if(selectedTool === "line"){
-            this.reDrawCanvas(); 
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.startX, this.startY);
-            this.ctx.lineTo(e.clientX, e.clientY);
-            this.ctx.stroke();
-            this.ctx.closePath();
-        }else if(selectedTool === "pencil"){
-            this.currentPencilStroke.push({x : e.clientX, y : e.clientY});
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.currentPencilStroke[0]!.x, this.currentPencilStroke[0]!.y);
-            this.currentPencilStroke.forEach((point) => {
-                this.ctx.lineTo(point.x, point.y);
-            })
-            this.ctx.stroke();
-            this.ctx.closePath();
-        }else if(selectedTool === "eraser"){
-            this.eraseShape(e.clientX, e.clientY);
-        }else if(selectedTool === "move" && this.activeShape){
-            const moveShape = this.activeShape as Shape & {type : "move"};
-            moveShape.offsetX = e.clientX - this.startX;
-            moveShape.offsetY = e.clientY - this.startY;
-            this.reDrawCanvas();
-        }
     }
 
     initMouseHandlerFunctions = () => {
@@ -329,35 +322,70 @@ export class Draw {
 
     eraseShape = (x : number, y : number) =>{
         this.existingShape = this.existingShape.filter((shape) => {
-            return (this.checkShapeRelativePosition(x, y, shape));
+            return (!this.checkShapeRelativePosition(x, y, shape));
         })
         this.reDrawCanvas();
     }
 
     checkShapeRelativePosition = (x : number, y : number, shape : Shape) : boolean =>{
-        const threshold = 10;
-        if(shape.type === "rect"){
-            return (
-                x >= shape.x &&
-                x <= shape.x + shape.width &&
-                y >= shape.y &&
-                y <= shape.y + shape.height 
-            );
+        const threshold = 8;
+        if (shape.type === 'rect') {
+            const { x : rectX, y : rectY, width, height } = shape;
+
+            const topEdge = this.isPointNearSegment(x, y, rectX, rectY, rectX + width, rectY, threshold);
+            const rightEdge = this.isPointNearSegment(x, y, rectX + width, rectY, rectX + width, rectY + height, threshold);
+            const bottomEdge = this.isPointNearSegment(x, y, rectX + width, rectY + height, rectX, rectY + height, threshold);
+            const leftEdge = this.isPointNearSegment(x, y, rectX, rectY + height, rectX, rectY, threshold);
+
+            return topEdge || rightEdge || bottomEdge || leftEdge;
         }else if(shape.type === "ellipse"){
             const dx = x - shape.centerX;
             const dy = y - shape.centerY;
+            const rx = shape.radiusX;
+            const ry = shape.radiusY;
 
-            return (
-                (dx * dx) / (shape.radiusX * shape.radiusX) +
-                (dy * dy) / (shape.radiusY * shape.radiusY)
-            ) <= 1;
+            const normalized = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+            return Math.abs(normalized - 1) < 0.2;
         }else if(shape.type === "pencil"){
-            return shape.points.every(
-                (point) => Math.hypot(x - point.x, y - point.y) <= threshold
-            );
+            for(let i = 0; i<shape.points.length-1; i++){
+                const p1 = shape.points[i];
+                const p2 = shape.points[i+1];
+                if(this.isPointNearSegment(x, y, p1!.x, p1!.y, p2!.x, p2!.y, threshold)) return true;
+            }
+        }else if (shape.type === 'line') {
+            return this.isPointNearSegment(x, y, shape.startX, shape.startY, shape.endX, shape.endY, threshold);
         }
+
         return false;
     }
+
+    isPointNearSegment = (px : number, py : number, x1 : number, y1 : number, x2 : number, y2 : number, threshold : number) : boolean => {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        if (len_sq !== 0) param = dot / len_sq;
+
+        let xx, yy;
+
+        if (param < 0){
+            xx = x1;
+            yy = y1;
+        }else if(param > 1){
+            xx = x2;
+            yy = y2;
+        }else{
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+        const dx = px - xx;
+        const dy = py - yy;
+        return dx * dx + dy * dy <= threshold * threshold;
+    }   
 };
 
 async function getExistingShape(roomId : number){

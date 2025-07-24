@@ -24,6 +24,13 @@ export default function Home() {
           </Button>
         </Link>
       </div>
+      <div className='className="flex flex-col justify-content items-center m-4'>
+          <Link href="/dashboard">
+              <Button variant='secondary' size='lg' className='border-2 hover:shadow:lg'>
+                  Dashboard
+              </Button>
+          </Link>
+      </div>
     </div>
   )
 }
