@@ -73,7 +73,7 @@ wss.on("connection", (ws, request) => {
                 console.log("No User found");
                 return;
             }
-            if(!user.rooms.find(parsedData.roomId)) user.rooms.push(parsedData.roomId);
+            if(!user.rooms.includes(Number(parsedData.roomId))) user.rooms.push(Number(parsedData.roomId));
             console.log("Room Added");
         }
         if(parsedData.type === "leave_room"){
