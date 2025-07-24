@@ -21,7 +21,7 @@ export default function Canvas({roomId} : {roomId : string}){
                 draw.destroy();
             }
         }
-    },[canvasRef, socket]);
+    },[canvasRef, socket, roomId]);
 
     useEffect(() => {
         drawBoard?.setTool(selectedTool);

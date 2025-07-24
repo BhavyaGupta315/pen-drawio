@@ -39,8 +39,7 @@ export default function AuthPage({isSignin} : {isSignin : boolean}){
                 setError(data.message || "Something went wrong");
             }
         }catch(e){
-            console.error(error);
-            console.log(error);
+            console.log(e);
             setError("Network error");
         }
     }
