@@ -123,7 +123,16 @@ app.post("/signin", async (req, res) => {
             return;
         };
 
-        const token = jwt.sign({userId: userExists.id}, JWT_SECRET);
+        const token = jwt.sign({userId: userExists.id}, JWT_SECRET, {
+            expiresIn: "7d"
+        });
+        res.setHeader("Set-Cookie", serialize("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+            maxAge: 7*24*60*60
+        }))
         res.status(201).json({
             type : "success",
             token : token

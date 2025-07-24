@@ -33,9 +33,14 @@ export default function Dashboard() {
             }else{
                 setError(data.message || "Something went wrong");
             }
-        } catch (err) {
-            console.error(err);
-            setError("Failed to create room.");
+        }catch(e){
+            console.log(e);
+            if (axios.isAxiosError(e)) {
+                const msg = e.response?.data?.message || "Unexpected error";
+                setError(msg);
+            }else{
+                setError("Failed to Create Room");
+            }
         }
     };
 
@@ -59,9 +64,14 @@ export default function Dashboard() {
                 setError(data.message || "Something went wrong");
             }
 
-        } catch (err) {
-            console.error(err);
-            setError("Failed to join room.");
+        } catch (e) {
+            console.log(e);
+            if (axios.isAxiosError(e)) {
+                const msg = e.response?.data?.message || "Unexpected error";
+                setError(msg);
+            }else{
+                setError("Failed to Join Room");
+            }
         }
     };
 

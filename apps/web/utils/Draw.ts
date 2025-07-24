@@ -389,12 +389,21 @@ export class Draw {
 };
 
 async function getExistingShape(roomId : number){
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`);
-    const messages = response.data.messages; 
-    const shapes = messages.map((x : {message : string}) => {
-        const messageData = JSON.parse(x.message);
-        return messageData;
-    });
+    try{
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`);
+        const messages = response.data.messages; 
+        const shapes = messages.map((x : {message : string}) => {
+            const messageData = JSON.parse(x.message);
+            return messageData;
+        });
 
-    return shapes;
+        return shapes;
+    }catch(e){
+        if (axios.isAxiosError(e)) {
+            const msg = e.response?.data?.message || "Unexpected error";
+            console.log(msg);
+        }else{
+            console.log(e);
+        }
+    }
 }

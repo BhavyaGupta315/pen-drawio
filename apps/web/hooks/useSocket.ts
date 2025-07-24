@@ -46,6 +46,12 @@ export function useSocket(roomId : string): UseSocketResult {
                     if (isMounted) setLoading(false);
                 };
             }catch(err){
+                if (axios.isAxiosError(err)) {
+                    const msg = err.response?.data?.message || "Unexpected error";
+                    setError(msg);
+                    setLoading(false);
+                    return;
+                }
                 console.error("Error connecting to WebSocket:", err);
                 if (isMounted) {
                     setError("Unable to connect to WebSocket");

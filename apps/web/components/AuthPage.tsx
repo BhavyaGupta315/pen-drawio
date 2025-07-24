@@ -40,7 +40,12 @@ export default function AuthPage({isSignin} : {isSignin : boolean}){
             }
         }catch(e){
             console.log(e);
-            setError("Network error");
+            if (axios.isAxiosError(e)) {
+                const msg = e.response?.data?.message || "Unexpected error";
+                setError(msg);
+            }else{
+                setError("Network error");
+            }
         }
     }
 
