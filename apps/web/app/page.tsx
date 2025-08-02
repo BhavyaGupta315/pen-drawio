@@ -1,36 +1,15 @@
-import { Button } from '@repo/ui/button'
-import Link from 'next/link'
+import Header from '../components/Header'
+import Hero from '../components/Hero'
+import Features from '../components/Features'
+import Footer from '../components/Footer'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-6">
-      <div className="text-5xl font-bold text-center text-gray-800 mb-4">
-        Pen Draw IO
-      </div>
-      <p className="text-lg text-gray-600 text-center max-w-xl mb-8">
-        A real-time collaborative whiteboard tool, inspired by Excalidraw. Draw, sketch, and brainstorm together from anywhere.
-      </p>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link href="/signup">
-          <Button variant='default' size='lg'>
-            Signup
-          </Button>
-        </Link>
-
-        <Link href="/signin">
-          <Button variant='default' size='lg'>
-            Signin
-          </Button>
-        </Link>
-      </div>
-      <div className='className="flex flex-col justify-content items-center m-4'>
-          <Link href="/dashboard">
-              <Button variant='secondary' size='lg' className='border-2 hover:shadow:lg'>
-                  Dashboard
-              </Button>
-          </Link>
-      </div>
-    </div>
+    <main className="min-h-screen bg-gradient-to-br from-slate-100 to-gray-400">
+      <Header />
+      <Hero />
+      <Features />
+      <Footer />
+    </main>
   )
 }
