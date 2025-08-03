@@ -1,12 +1,14 @@
 "use client";
 
-import { ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
 
 interface ButtonProps {
   children: ReactNode;
   className?: string;
-  variant : "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant? : "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   onClick? : () => void;
+  isLoading? : boolean;
   size : "default" | "sm" | "lg" | "icon"
 }
 
@@ -31,12 +33,22 @@ const sizeOptions = {
       icon: "size-9",
 }
 
-export const Button = ({ variant, onClick, children, className, size }: ButtonProps) => {
+export const Button = ({ variant, onClick, children, className, size, isLoading=true}: ButtonProps) => {
+  const [loading, setLoading] = useState(false);
   return (
     <button
-      className={`${className} ${variantOptions[variant]} ${sizeOptions[size]} cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive`}
-      onClick={onClick}
+      className={`${(variant) ? variantOptions[variant] : variantOptions["default"]} ${sizeOptions[size]} cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive ${className}`}
+      onClick={(e) => {
+        if(!loading && onClick){
+            if(typeof(isLoading) === "boolean" && isLoading){
+              setLoading(true);
+            }
+            onClick();
+        }
+      }}
+      disabled={loading}
     >
+      {loading && <Loader2 className="animate-spin"/>}
       {children}
     </button>
   );

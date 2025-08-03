@@ -87,9 +87,9 @@ export default function AuthPage({isSignin} : {isSignin : boolean}){
             </div>
              {error && <div className="text-red-500 text-center py-2">{error}</div>}
             <div className="flex justify-center items-center py-2">
-                <Button variant="default" size="default" onClick={handleOnClick}>
-                    {loading && <Loader/>}
-                    {!loading && (isSignin && "Sign In") || (!isSignin && "Sign Up")}
+                <Button variant="default" size="default" onClick={handleOnClick} isLoading={loading}>
+                    {(isSignin && "Sign In")} 
+                    {(!isSignin && "Sign Up")}
                 </Button>
             </div>
             <div className="flex justify-center items-center py-3">

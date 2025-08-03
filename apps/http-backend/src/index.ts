@@ -17,12 +17,10 @@ app.use(cors({
 }));
 
 app.post("/signup", async (req, res) => {
-    console.log("Get Body");
     try{
         const body = req.body;
         const parsedData = CreateUserSchema.safeParse(body);
         if(!parsedData.success){
-            console.log(parsedData.error);
             res.status(400).json({
                 type: "validation_error",
                 message: "Invalid input data",
@@ -69,7 +67,7 @@ app.post("/signup", async (req, res) => {
         res.setHeader("Set-Cookie", serialize("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             path: "/",
             maxAge: 7*24*60*60
         }))
@@ -127,10 +125,11 @@ app.post("/signin", async (req, res) => {
         const token = jwt.sign({userId: userExists.id}, JWT_SECRET, {
             expiresIn: "7d"
         });
+
         res.setHeader("Set-Cookie", serialize("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             path: "/",
             maxAge: 7*24*60*60
         }))
@@ -208,7 +207,7 @@ app.post("/create-room", middleware, async (req, res) =>{
         })
         return;
     }
-
+    
     try{
         const room = await prismaClient.room.create({
             data : {
@@ -216,10 +215,9 @@ app.post("/create-room", middleware, async (req, res) =>{
                 adminId : userId
             }
         })
-        const roomId  = room.id;
         res.json({
             type : "success",
-            roomId : roomId
+            room : room
         });
     }catch(e){
         console.log("Error while creating Room - ", e);
@@ -306,5 +304,36 @@ app.get("/room-exists/:id", async( req, res) => {
         })
     }
 })
+
+app.get("/rooms/:userId", async (req, res) => {
+    const userId = req.params.userId;
+    try{
+        const rooms = await prismaClient.room.findMany({
+            where : {
+                admin : {
+                    id : userId
+                }
+            }
+        });
+        const user = await prismaClient.user.findFirst({
+            where : {
+                id : userId
+            }
+        });
+        res.json({
+            type : "success",
+            message : "Successfully Fetched All of the rooms",
+            rooms : rooms,
+            user : user
+        })
+    }catch(e){
+        console.log(e);
+        res.json({
+            type: "server_error",
+            message : "Internal Server Error"
+        })
+    }
+})
+
 
 app.listen(3001);
