@@ -8,34 +8,30 @@ datasource db {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String  @unique
-  password         String
-  name             String
-  photo            String?
-  rooms Room[]     @relation("UserRooms")
-  chats Shape[]    @relation("UserShapes")
+  id    String   @id @default(uuid())
+  email  String  @unique
+  password String
+  name String
+  photo String?
+  rooms Room[]
+  chats Chat[]
 }
 
 model Room {
-  id              Int  @id @default(autoincrement())
-  slug            String @unique
-  createdAt       DateTime @default(now())
-  adminId         String
-  admin   User    @relation("UserRooms", fields: [adminId], references: [id])
-  shapes Shape[]  @relation("RoomShapes")
+  id   Int  @id @default(autoincrement())
+  slug  String @unique
+  createdAt DateTime @default(now())
+  adminId String
+  admin   User  @relation(fields: [adminId], references: [id])
+  chats Chat[]
 }
 
-model Shape {
-  id            String   @id @default(uuid())
-  type          String   // "rect" | "ellipse" | "line" | "pencil"
-  data          Json    // Shape specific Data
-  createdAt     DateTime  @default(now())
-  roomId        Int
-  userId        String
+model Chat {
+  id   Int  @id @default(autoincrement())
+  roomId Int
+  message String
+  userId String 
+  user User @relation(fields: [userId], references: [id])
+  room Room @relation(fields: [roomId], references: [id])
 
-  room Room     @relation("RoomShapes", fields: [roomId], references: [id])
-  user User     @relation("UserShapes", fields: [userId], references: [id])
 }
-
-

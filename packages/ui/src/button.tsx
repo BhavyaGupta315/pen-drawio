@@ -44,6 +44,7 @@ export const Button = ({ variant, onClick, children, className, size, isLoading=
               setLoading(true);
             }
             onClick();
+            setLoading(false);
         }
       }}
       disabled={loading}

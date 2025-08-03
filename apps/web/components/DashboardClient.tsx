@@ -60,7 +60,9 @@ export default function DashboardClient({ rooms, user} : Props){
                     setError(data.message || "Room creation failed.");
                     return;
                 }
+                console.log(joinedRooms);
                 setJoinedRooms((prev) => [data.room, ...prev]);
+                console.log("New - ", joinedRooms);
                 router.push(`/canvas/${data.room.id}`);
             }else{
                 setError(data.message || "Something went wrong");

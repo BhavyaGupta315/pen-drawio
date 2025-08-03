@@ -231,12 +231,9 @@ app.post("/create-room", middleware, async (req, res) =>{
 app.get("/shape/:roomId", async (req, res) =>{
     const roomId = Number(req.params.roomId);
     try{
-        const messages = await prismaClient.shape.findMany({
+        const messages = await prismaClient.chat.findMany({
             where:{
                 roomId : roomId
-            },
-            orderBy:{
-                createdAt : "desc"
             },
             take : 1000
         })

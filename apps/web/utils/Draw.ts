@@ -390,7 +390,7 @@ export class Draw {
 
 async function getExistingShape(roomId : number){
     try{
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/shape/${roomId}`);
         const messages = response.data.messages; 
         const shapes = messages.map((x : {message : string}) => {
             const messageData = JSON.parse(x.message);
