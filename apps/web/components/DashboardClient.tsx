@@ -52,7 +52,7 @@ export default function DashboardClient({ rooms, user} : Props){
                 headers : {
                     "Content-Type" : "application/json"
                 }
-            });
+            }); 
             
             const data = response.data;
             if(data.type === "success"){
@@ -114,6 +114,26 @@ export default function DashboardClient({ rooms, user} : Props){
         alert("Link copied to clipboard!");
     };
 
+    const handleSignout = async () =>{
+        try{
+          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/signout`, {}, {
+                withCredentials : true,
+                headers : {
+                    "Content-Type" : "application/json"
+                }
+          });
+          if(response.data.type === "success"){
+              router.push("/");
+          }else{
+            alert("Internal Server Error");
+          }
+        }catch(err){
+          console.log(err);
+          alert("Internal Server Error");
+        }
+      
+    }
+
       return (
     <div className="min-h-screen bg-[#121212] text-white px-6 py-4">
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-6xl bg-[#404040] backdrop-blur-md rounded-xl shadow-lg px-6 py-4 flex justify-between items-center z-50 border border-gray-700">
@@ -121,9 +141,8 @@ export default function DashboardClient({ rooms, user} : Props){
         <div className="flex gap-5">
             <div className="text-gray-300">Welcome, <span className="font-medium">{user.name}</span></div>
             <Link href='/signup'>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" onClick={handleSignout}>
                     Sign Out
-                    // Add an onclick handler for sending request to backend for signout
                 </Button>
             </Link>
         </div>

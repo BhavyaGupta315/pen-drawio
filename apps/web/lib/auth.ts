@@ -24,7 +24,6 @@ export async function fetchUserRooms(userId : string){
         if(AxiosRoomsData.data.type === "success"){
             const rooms = AxiosRoomsData.data.rooms;
             const user = AxiosRoomsData.data.user;
-            console.log("Server Side - ", AxiosRoomsData.data);
             return {rooms, user};
         }else{
             return null;

@@ -146,14 +146,13 @@ app.post("/signin", async (req, res) => {
     }
 })
 
-// Check if Signout is working
 app.post("/signout", async (req, res) => {
     res.setHeader("Set-Cookie", serialize("token", "", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         path: "/",
-        maxAge: 0,
+        maxAge: 0
     }));
     res.status(200).json({ type: "success" });
 });
