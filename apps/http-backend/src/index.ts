@@ -1,25 +1,24 @@
 import express from "express";
-import jwt from "jsonwebtoken";
+import jwt, { decode, JwtPayload } from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import cors from "cors";
+import { parse, serialize } from "cookie";
 import { middleware } from "./middleware";
 import { JWT_SECRET } from "@repo/backend-common/config";
-import bcrypt from "bcryptjs";
 import { CreateUserSchema, SigninSchema, RoomSchema } from "@repo/common/types"
 import {prismaClient} from "@repo/db/client"
-import { parse, serialize } from "cookie";
-import cors from "cors";
 
 const app = express();
 app.use(express.json());
 
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN,
-  credentials: true,              
+    origin: process.env.FRONTEND_ORIGIN,
+    credentials: true,              
 }));
 
 app.post("/signup", async (req, res) => {
     try{
         const body = req.body;
-
         const parsedData = CreateUserSchema.safeParse(body);
         if(!parsedData.success){
             res.status(400).json({
@@ -31,7 +30,7 @@ app.post("/signup", async (req, res) => {
         }
         
         if(!JWT_SECRET){
-            console.error("JWT Secret is not present");
+            console.log("JWT Secret is not present");
             res.status(500).json({
                 type: "server_error",
                 message: "Internal server configuration error",
@@ -68,7 +67,7 @@ app.post("/signup", async (req, res) => {
         res.setHeader("Set-Cookie", serialize("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             path: "/",
             maxAge: 7*24*60*60
         }))
@@ -126,10 +125,11 @@ app.post("/signin", async (req, res) => {
         const token = jwt.sign({userId: userExists.id}, JWT_SECRET, {
             expiresIn: "7d"
         });
+
         res.setHeader("Set-Cookie", serialize("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             path: "/",
             maxAge: 7*24*60*60
         }))
@@ -150,9 +150,9 @@ app.post("/signout", async (req, res) => {
     res.setHeader("Set-Cookie", serialize("token", "", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         path: "/",
-        maxAge: 0,
+        maxAge: 0
     }));
     res.status(200).json({ type: "success" });
 });
@@ -168,7 +168,7 @@ app.get("/token", (req, res) => {
     }
 
     if(!JWT_SECRET){
-        console.error("JWT Secret is not present");
+        console.log("JWT Secret is not present");
         res.status(500).json({
             type: "server_error",
             message: "Internal server configuration error",
@@ -176,32 +176,37 @@ app.get("/token", (req, res) => {
         return;
     }
     try {
-        jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
         res.json({
-            type:"success",
-            token:token
+            type: "success",
+            token: token,
+            userId : decoded.userId
         })
     }catch(err){
         res.status(403).json({ type: "unauthorized", message : "Cookies are Invalid" });
-    return;
     }
-
 })
 
 app.post("/create-room", middleware, async (req, res) =>{
     const parsedData = RoomSchema.safeParse(req.body);
     if(!parsedData.success){
-        res.status(403).json({
-            message : "Invalid Data",
-            error: parsedData.error
+        res.status(400).json({
+            type : "validation_error",
+            message : "Invalid Input Data",
+            error: parsedData.error.format()
         })
         return;
     }
     const userId = req.userId;
     if(!userId){
-        console.log("User ID is not, Authorization not done");
+        console.log("User ID is not present, Authorization not done");
+        res.status(500).json({
+            type : "server_error",
+            message : "Internal server configuration error",
+        })
         return;
     }
+    
     try{
         const room = await prismaClient.room.create({
             data : {
@@ -209,29 +214,26 @@ app.post("/create-room", middleware, async (req, res) =>{
                 adminId : userId
             }
         })
-        const roomId  = room.id;
         res.json({
             type : "success",
-            roomId : roomId
+            room : room
         });
     }catch(e){
         console.log("Error while creating Room - ", e);
         res.status(401).json({
+            type : "conflict_error",
             message : "Room is already there with the same name"
         })
     }
     
 })
 
-app.get("/chat/:roomId", async (req, res) =>{
+app.get("/shape/:roomId", async (req, res) =>{
     const roomId = Number(req.params.roomId);
     try{
         const messages = await prismaClient.chat.findMany({
             where:{
                 roomId : roomId
-            },
-            orderBy:{
-                id : "desc"
             },
             take : 1000
         })
@@ -252,11 +254,10 @@ app.get("/room/:slug", async (req, res) => {
     const slug = req.params.slug;
     try{
         const room = await prismaClient.room.findFirst({
-        where:{
-            slug
-        }
-    });
-
+            where:{
+                slug
+            }
+        });
         res.json({
             type : "success",
             room
@@ -289,7 +290,7 @@ app.get("/room-exists/:id", async( req, res) => {
         }
         res.json({
             type:"success",
-            message:"Room Exists"
+            room
         })
     }catch(e){
         console.log(e);
@@ -299,5 +300,36 @@ app.get("/room-exists/:id", async( req, res) => {
         })
     }
 })
+
+app.get("/rooms/:userId", async (req, res) => {
+    const userId = req.params.userId;
+    try{
+        const rooms = await prismaClient.room.findMany({
+            where : {
+                admin : {
+                    id : userId
+                }
+            }
+        });
+        const user = await prismaClient.user.findFirst({
+            where : {
+                id : userId
+            }
+        });
+        res.json({
+            type : "success",
+            message : "Successfully Fetched All of the rooms",
+            rooms : rooms,
+            user : user
+        })
+    }catch(e){
+        console.log(e);
+        res.json({
+            type: "server_error",
+            message : "Internal Server Error"
+        })
+    }
+})
+
 
 app.listen(3001);
